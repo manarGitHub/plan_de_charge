@@ -4,4 +4,4 @@ frontend/dist/
 server/dist/
 frontend/.env
 server/.env
-frontend/.next
+frontend/.next/
