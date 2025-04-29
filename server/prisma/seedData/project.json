@@ -1,0 +1,92 @@
+[
+  {
+    "id": 1,
+    "name": "GAZBHY",
+    "description": "Un projet d'exploration spatiale.",
+    "pole": "GDI",
+    "site":"BO",
+    "startDate": "2023-01-01T00:00:00Z",
+    "endDate": "2023-12-31T00:00:00Z"
+  },
+  {
+    "id": 2,
+    "name": "Philéas",
+    "description": "Développement de systèmes de navigation avancés.",
+    "pole": "GDI",
+    "site":"BO",
+    "startDate": "2023-02-01T00:00:00Z",
+    "endDate": "2023-10-15T00:00:00Z"
+  },
+  {
+    "id": 3,
+    "name": "PTS",
+    "description": "A project to boost renewable energy use.",
+    "pole": "GDI",
+    "site":"BO",
+    "startDate": "2023-03-05T00:00:00Z",
+    "endDate": "2024-03-05T00:00:00Z"
+  },
+  {
+    "id": 4,
+    "name": "MAJIC",
+    "description": "Delta project for new software development techniques.",
+    "pole": "PUSG",
+    "site":"BO",
+    "startDate": "2023-01-20T00:00:00Z",
+    "endDate": "2023-09-20T00:00:00Z"
+  },
+  {
+    "id": 5,
+    "name": "IODA",
+    "description": "Echo project focused on AI advancements.",
+    "pole": "PUSG",
+    "site":"BO",
+    "startDate": "2023-04-15T00:00:00Z",
+    "endDate": "2023-11-30T00:00:00Z"
+  },
+  {
+    "id": 6,
+    "name": "SAXO",
+    "description": "Exploring cutting-edge biotechnology.",
+    "pole": "PUSG",
+    "site":"BO",
+    "startDate": "2023-02-25T00:00:00Z",
+    "endDate": "2023-08-25T00:00:00Z"
+  },
+  {
+    "id": 7,
+    "name": "BSURI",
+    "description": "Development of new golf equipment using AI.",
+    "pole": "PTE",
+    "site":"BO",
+    "startDate": "2023-05-10T00:00:00Z",
+    "endDate": "2023-12-10T00:00:00Z"
+  },
+  {
+    "id": 8,
+    "name": "CKCC",
+    "description": "Hotel management system overhaul.",
+    "pole": "PTE",
+    "site":"BO",
+    "startDate": "2023-03-01T00:00:00Z",
+    "endDate": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": 9,
+    "name": "EACCOR",
+    "description": "Telecommunication infrastructure upgrade.",
+    "pole": "PTE",
+    "site":"BO",
+    "startDate": "2023-06-01T00:00:00Z",
+    "endDate": "2023-12-01T00:00:00Z"
+  },
+  {
+    "id": 10,
+    "name": "OSR",
+    "description": "Initiative to enhance cyber-security measures.",
+    "pole": "PTE",
+    "site":"BO",
+    "startDate": "2023-07-01T00:00:00Z",
+    "endDate": "2024-02-01T00:00:00Z"
+  }
+]

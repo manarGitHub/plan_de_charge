@@ -1,0 +1,180 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+
+
+model User {
+  userId            Int     @id @default(autoincrement())
+  cognitoId         String  @unique
+  username          String  @unique
+  profile           String?
+  profilePictureUrl String?
+  teamId            Int?
+
+  authoredTasks   Task[]           @relation("TaskAuthor")
+  assignedTasks   Task[]           @relation("TaskAssignee")
+  taskAssignments TaskAssignment[]
+  attachments     Attachment[]
+  comments        Comment[]
+  team            Team?            @relation(fields: [teamId], references: [id])
+  devis   UserDevis[]  
+
+  Availability Availability[]
+
+
+  MonthlyProductionRate MonthlyProductionRate[]
+}
+model Availability {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  weekStart    DateTime
+  daysAvailable Int
+
+  user         User     @relation(fields: [userId], references: [userId])
+
+  @@unique([userId, weekStart]) // Ensure one entry per user per week
+}
+
+model Devis {
+  id                  String    @id @default(uuid()) 
+  numero_dac          String?   // Should match Task title
+  libelle             String?
+  version             Int?
+  date_emission       DateTime? @db.Date
+  pole               String?
+  application         String?
+  date_debut         DateTime? @db.Date
+  date_fin           DateTime? @db.Date
+  charge_hj          Decimal? @db.Decimal(10,2)
+  montant            Decimal  @default(0.00) @db.Decimal(12,2)
+  statut             String?
+  statut_realisation String?
+  jour_homme_consomme Int?
+  ecart              Decimal? @db.Decimal(6,2)
+  hommeJourActive    Boolean  @default(false)
+
+  tasks  Task[] @relation(name: "DevisToTask")  //  One to many 
+  users  UserDevis[]  // Many-to-Many Relationship with Users
+}
+
+model UserDevis {
+  id      Int     @id @default(autoincrement())
+  userId  Int
+  devisId String
+
+  user  User  @relation(fields: [userId], references: [userId])
+  devis Devis @relation(fields: [devisId], references: [id])
+}
+
+model Team {
+  id                   Int           @id @default(autoincrement())
+  teamName             String
+  productOwnerUserId   Int?
+  projectManagerUserId Int?
+  projectTeams         ProjectTeam[]
+  user                 User[]
+}
+
+model Project {
+  id           Int           @id @default(autoincrement())
+  name         String
+  description  String?
+  pole         String?
+  site         String?
+  startDate    DateTime?
+  endDate      DateTime?
+  tasks        Task[]
+  projectTeams ProjectTeam[]
+}
+
+model ProjectTeam {
+  id        Int     @id @default(autoincrement())
+  teamId    Int
+  projectId Int
+  team      Team    @relation(fields: [teamId], references: [id])
+  project   Project @relation(fields: [projectId], references: [id])
+}
+
+model Task {
+  id             Int       @id @default(autoincrement())
+  title          String    // Should be equal to numero_dac from Devis
+  description    String?
+  status         String?
+  priority       String?
+  tags           String?
+  startDate      DateTime?
+  dueDate        DateTime?
+  workingDays         Int?
+  projectId      Int
+  authorUserId   Int?
+  assignedUserId Int?
+  devisId        String?  // Foreign Key for Devis
+
+  project   Project  @relation(fields: [projectId], references: [id])
+  author    User?     @relation("TaskAuthor", fields: [authorUserId], references: [userId])
+  assignee  User?    @relation("TaskAssignee", fields: [assignedUserId], references: [userId])
+  devis     Devis?    @relation(name: "DevisToTask", fields: [devisId], references: [id]) 
+
+  taskAssignments TaskAssignment[]
+  attachments     Attachment[]
+  comments        Comment[]
+}
+
+model TaskAssignment {
+  id     Int @id @default(autoincrement())
+  userId Int
+  taskId Int
+
+  user User @relation(fields: [userId], references: [userId])
+  task Task @relation(fields: [taskId], references: [id])
+}
+
+model Attachment {
+  id           Int     @id @default(autoincrement())
+  fileURL      String
+  fileName     String?
+  taskId       Int
+  uploadedById Int
+
+  task       Task @relation(fields: [taskId], references: [id])
+  uploadedBy User @relation(fields: [uploadedById], references: [userId])
+}
+
+model Comment {
+  id     Int    @id @default(autoincrement())
+  text   String
+  taskId Int
+  userId Int
+
+  task Task @relation(fields: [taskId], references: [id])
+  user User @relation(fields: [userId], references: [userId])
+}
+
+model MonthlyProductionRate {
+  id             Int      @id @default(autoincrement())
+  user           User     @relation(fields: [userId], references: [userId])
+  userId         Int
+  month          String   // Format: "2024-04"
+  availableDays  Int
+  workingDays    Int
+  productionRate Float
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([userId, month]) // un seul enregistrement par mois et par user
+}
+
+
+
