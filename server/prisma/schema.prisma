@@ -18,9 +18,12 @@ datasource db {
 model User {
   userId            Int     @id @default(autoincrement())
   cognitoId         String  @unique
-  username          String  @unique
+  username          String 
+  email       String?
+  phoneNumber String?
   profile           String?
   profilePictureUrl String?
+
   teamId            Int?
 
   authoredTasks   Task[]           @relation("TaskAuthor")
@@ -36,6 +39,15 @@ model User {
 
   MonthlyProductionRate MonthlyProductionRate[]
 }
+model Manager {
+  id          Int    @id @default(autoincrement())
+  cognitoId   String @unique
+  name        String
+  email       String
+  phoneNumber String
+
+}
+
 model Availability {
   id           Int      @id @default(autoincrement())
   userId       Int
@@ -169,7 +181,10 @@ model MonthlyProductionRate {
   month          String   // Format: "2024-04"
   availableDays  Int
   workingDays    Int
+  unbilledDays    Int
   productionRate Float
+  occupationRate Float
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

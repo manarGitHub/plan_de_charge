@@ -1,4 +1,5 @@
 import { useAppSelector } from '@/app/redux';
+import { useGetAuthUserQuery } from '@/state/api'; // ✅ import user query
 import { Devis } from '@/state/api';
 import { CheckCircle, Clock, FileText, SquareArrowOutUpRight, XCircle } from 'lucide-react';
 import Link from 'next/link';
@@ -58,11 +59,13 @@ const getStatusBadge = (statut?: string) => {
     }
 };
 
-
 const DevisComponent: React.FC<DevisComponentProps> = ({ devis }) => {
     const montantAffiche = devis.montant ? Number(devis.montant).toFixed(2) : "0.00";
     const statutRealisation = devis.statut_realisation ? String(devis.statut_realisation) : undefined;
     const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
+
+    const { data: authUser } = useGetAuthUserQuery(); // ✅ get auth user
+    const userRole = (authUser?.userRole as string)?.toLowerCase();
 
     return (
         <div className="bg-white dark:bg-black text-black dark:text-white p-6 rounded-2xl shadow-xl transform hover:scale-105 transition-transform duration-300 ease-in-out">
@@ -70,13 +73,16 @@ const DevisComponent: React.FC<DevisComponentProps> = ({ devis }) => {
                 <div className="flex items-center space-x-2">
                     {getStatusBadge(statutRealisation)}
                 </div>
-                <Link
-    className="btn btn-sm text-white bg-blue-primary hover:bg-blue-600 dark:bg-blue-700 dark:hover:bg-blue-800"
-    href={`/devis/${devis.id}`}
-                >
-                    Plus
-                    <SquareArrowOutUpRight className="w-4 ml-2" />
-                </Link>
+
+                {userRole === "manager" && (
+                    <Link
+                        className="btn btn-sm text-white bg-blue-primary hover:bg-blue-600 dark:bg-blue-700 dark:hover:bg-blue-800"
+                        href={`/managers/devis/${devis.id}`}
+                    >
+                        Plus
+                        <SquareArrowOutUpRight className="w-4 ml-2" />
+                    </Link>
+                )}
             </div>
 
             <div className="space-y-3">

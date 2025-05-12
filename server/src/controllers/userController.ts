@@ -13,17 +13,21 @@ export const getUsers = async (req: Request, res: Response): Promise<void> => {
       .json({ message: `Error retrieving users: ${error.message}` });
   }
 };
-
-export const getUser = async (req: Request, res: Response): Promise<void> => {
-  const { cognitoId } = req.params;
+export const getUser = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
+    const { cognitoId } = req.params;
     const user = await prisma.user.findUnique({
-      where: {
-        cognitoId: cognitoId,
-      },
+      where: { cognitoId },
     });
 
-    res.json(user);
+    if (user) {
+      res.json(user);
+    } else {
+      res.status(404).json({ message: "user not found" });
+    }
   } catch (error: any) {
     res
       .status(500)
@@ -31,26 +35,61 @@ export const getUser = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export const postUser = async (req: Request, res: Response) => {
+export const createUser = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
-    const {
-      username,
+    const { 
       cognitoId,
-      profilePictureUrl = "i1.jpg",
-      teamId = 1,
-    } = req.body;
-    const newUser = await prisma.user.create({
+      username,
+      email,
+      phoneNumber,
+      profilePictureUrl,
+      teamId,} = req.body;
+
+    const user = await prisma.user.create({
       data: {
-        username,
         cognitoId,
-        profilePictureUrl,
-        teamId,
+        username,
+        email,
+        phoneNumber,
+        profilePictureUrl: profilePictureUrl || 'i1.jpg',
+        teamId: teamId ? Number(teamId) : null,
       },
     });
-    res.json({ message: "User Created Successfully", newUser });
+
+    res.status(201).json(user);
   } catch (error: any) {
     res
       .status(500)
-      .json({ message: `Error retrieving users: ${error.message}` });
+      .json({ message: `Error creating user: ${error.message}` });
+  }
+};
+export const updateUser = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { cognitoId } = req.params;
+    const { username, email, phoneNumber,profile,profilePictureUrl,teamId } = req.body;
+
+    const updateUser = await prisma.user.update({
+      where: { cognitoId },
+      data: {
+        username,
+        email,
+        phoneNumber,
+        profile,
+        profilePictureUrl,
+        teamId
+      },
+    });
+
+    res.json(updateUser);
+  } catch (error: any) {
+    res
+      .status(500)
+      .json({ message: `Error updating user: ${error.message}` });
   }
 };

@@ -24,6 +24,7 @@ const calculateAndSaveProductionRates = (req, res) => __awaiter(void 0, void 0, 
             const end = (0, date_fns_1.endOfMonth)(start);
             const monthKey = `${start.getFullYear()}-${String(month + 1).padStart(2, "0")}`;
             for (const user of users) {
+                // Get user availability
                 const availability = yield prisma.availability.findFirst({
                     where: {
                         userId: user.userId,
@@ -31,15 +32,24 @@ const calculateAndSaveProductionRates = (req, res) => __awaiter(void 0, void 0, 
                     },
                 });
                 const availableDays = (_a = availability === null || availability === void 0 ? void 0 : availability.daysAvailable) !== null && _a !== void 0 ? _a : 0;
+                // Get all tasks for the user in the month
                 const tasks = yield prisma.task.findMany({
                     where: {
                         assignedUserId: user.userId,
                         startDate: { gte: start, lte: end },
                     },
-                    select: { workingDays: true },
+                    select: {
+                        workingDays: true,
+                        devisId: true
+                    },
                 });
+                // Calculate metrics
                 const workingDays = tasks.reduce((sum, task) => { var _a; return sum + ((_a = task.workingDays) !== null && _a !== void 0 ? _a : 0); }, 0);
-                const productionRate = availableDays > 0 ? workingDays / availableDays : 0;
+                const unbilledDays = tasks.reduce((sum, task) => { var _a; return sum + (task.devisId === null ? ((_a = task.workingDays) !== null && _a !== void 0 ? _a : 0) : 0); }, 0);
+                const daysInvoiced = workingDays - unbilledDays;
+                const productionRate = availableDays > 0 ? daysInvoiced / availableDays : 0;
+                const occupationRate = availableDays > 0 ? workingDays / availableDays : 0;
+                // Create/update record
                 const saved = yield prisma.monthlyProductionRate.upsert({
                     where: {
                         userId_month: {
@@ -50,14 +60,18 @@ const calculateAndSaveProductionRates = (req, res) => __awaiter(void 0, void 0, 
                     update: {
                         availableDays,
                         workingDays,
+                        unbilledDays,
                         productionRate,
+                        occupationRate,
                     },
                     create: {
                         userId: user.userId,
                         month: monthKey,
                         availableDays,
                         workingDays,
+                        unbilledDays,
                         productionRate,
+                        occupationRate,
                     },
                 });
                 results.push(saved);
@@ -71,13 +85,12 @@ const calculateAndSaveProductionRates = (req, res) => __awaiter(void 0, void 0, 
     }
 });
 exports.calculateAndSaveProductionRates = calculateAndSaveProductionRates;
-// Ajoute cette fonction dans le même fichier
 const getAllMonthlyRates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const rates = yield prisma.monthlyProductionRate.findMany({
             include: {
                 user: {
-                    select: { userId: true, username: true, profile: true } // adapte selon ton modèle User
+                    select: { userId: true, username: true, profile: true }
                 }
             },
             orderBy: [

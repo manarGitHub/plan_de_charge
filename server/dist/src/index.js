@@ -18,6 +18,8 @@ const userRoutes_1 = __importDefault(require("./routes/userRoutes"));
 const teamRoutes_1 = __importDefault(require("./routes/teamRoutes"));
 const availabilityRoutes_1 = __importDefault(require("./routes/availabilityRoutes"));
 const productionRateRoutes_1 = __importDefault(require("./routes/productionRateRoutes"));
+const managerRoutes_1 = __importDefault(require("./routes/managerRoutes"));
+const authMiddleware_1 = require("./middleware/authMiddleware");
 /* CONFIGURATIONS */
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -36,10 +38,11 @@ app.use("/projects", projectRoutes_1.default);
 app.use("/tasks", taskRoutes_1.default);
 app.use("/devis", devisRoutes_1.default);
 app.use("/search", searchRoutes_1.default);
-app.use("/users", userRoutes_1.default);
 app.use("/teams", teamRoutes_1.default);
 app.use('/availabilities', availabilityRoutes_1.default);
 app.use("/production-rates", productionRateRoutes_1.default);
+app.use("/users", userRoutes_1.default);
+app.use("/managers", (0, authMiddleware_1.authMiddleware)(["manager"]), managerRoutes_1.default);
 /* SERVER */
 const port = Number(process.env.PORT) || 3000;
 app.listen(port, "0.0.0.0", () => {

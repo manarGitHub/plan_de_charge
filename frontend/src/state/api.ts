@@ -1,9 +1,17 @@
+import { createNewUserInDatabase } from "@/lib/utils";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { AuthUser, fetchAuthSession, getCurrentUser } from "aws-amplify/auth";
 
-type ValidApplications = {
-  [key: string]: string[]; // Key is a string (pole name), value is an array of applications
-};
+export type JsonPrimitive = string | number | boolean | null;
+export type JsonArray = JsonValue[];
+export type JsonObject = { [key: string]: JsonValue };
+export type JsonValue = JsonPrimitive | JsonObject | JsonArray;
 
+export interface AuthUserResponse {
+  cognitoInfo: AuthUser;
+  userInfo: User | Manager;
+  userRole: JsonObject | JsonPrimitive | JsonArray;
+}
 export interface Project {
   id: number;
   name: string;
@@ -32,10 +40,19 @@ export enum Status {
 export interface User {
   userId?: number;
   username: string;
-  profile: string;
+  profile?: string;
+  email?:string;
+  phoneNumber?:string;
   profilePictureUrl?: string;
   cognitoId?: string;
   teamId?: number;
+}
+export interface Manager {
+  id: number;
+  name: string;
+  email: string;
+  phoneNumber: string;
+  cognitoId: string;
 }
 
 export interface UserWithDevis {
@@ -62,7 +79,7 @@ export interface Devis {
   jour_homme_consomme?: number;
   ecart?: number;
   hommeJourActive?: boolean;
-  users: UserWithDevis[];  // Adjusted to match the API response
+  users: UserWithDevis[];  
 }
 
 export interface Attachment {
@@ -132,10 +149,93 @@ export interface MonthlyProductionRate {
 export const api = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
+    prepareHeaders: async (headers) => {
+      const session = await fetchAuthSession();
+      const { idToken } = session.tokens ?? {};
+      if (idToken) {
+        headers.set("Authorization", `Bearer ${idToken}`);
+      }
+      return headers;
+    },
   }),
+ 
   reducerPath: "api",
   tagTypes: ["Projects", "Tasks", "Users", "Teams", "Devis","MonthlyProductionRates"],
   endpoints: (build) => ({
+    getAuthUser: build.query<AuthUserResponse, void>({
+      queryFn: async (_, _queryApi, _extraoptions, fetchWithBQ) => {
+        try {
+          const session = await fetchAuthSession();
+          console.log('Cognito session:', session); // Add this
+
+          const { idToken } = session.tokens ?? {};
+          console.log('ID Token:', idToken); // Add this
+
+          const user = await getCurrentUser();
+          console.log('Cognito user:', user); // Add this
+
+          const userRole = idToken?.payload["custom:role"] as string;
+
+          console.log('Derived role:', userRole); // Add this
+
+
+          const endpoint =
+            userRole === "manager"
+              ? `/managers/${user.userId}`
+              : `/users/${user.userId}`;
+    
+          let userDetailsResponse = await fetchWithBQ(endpoint);
+    
+          // Proper error type handling
+          if (userDetailsResponse.error) {
+            // Type guard for FetchBaseQueryError
+            if ('status' in userDetailsResponse.error) {
+              // Handle 404 case
+              if (userDetailsResponse.error.status === 404) {
+                userDetailsResponse = await fetchWithBQ({
+                  url: userRole === "manager" ? "/managers" : "/users",
+                  method: "POST",
+                  body: {
+                    cognitoId: user.userId,
+                    ...(userRole === "manager" 
+                      ? { name: user.username }
+                      : { username: user.username }),
+                    email: idToken?.payload?.email || "",
+                    phoneNumber: "",
+                  }
+                });
+              } else {
+                // Handle other error statuses
+                throw new Error(
+                  typeof userDetailsResponse.error.data === 'string' 
+                    ? userDetailsResponse.error.data 
+                    : 'Unknown error'
+                );
+              }
+            } else {
+              // Handle non-FetchBaseQueryError errors
+              throw new Error('Unknown error');
+            }
+          }
+    
+          return {
+            data: {
+              cognitoInfo: { ...user },
+              userInfo: userDetailsResponse.data as User | Manager,
+              userRole,
+            },
+          };
+        } catch (error: any) {
+          // Proper error return format
+          return { 
+            error: {
+              status: error.status || 'CUSTOM_ERROR',
+              data: error.message || "Could not fetch user data"
+            }
+          };
+        }
+      },
+    }),
     getProjects: build.query<Project[], void>({
       query: () => "projects",
       providesTags: ["Projects"],
@@ -317,5 +417,6 @@ export const {
   useUpdateAvailabilityMutation,
   useDeleteAvailabilityMutation,
   useGetMonthlyRatesQuery, 
-  useUpdateMonthlyRatesMutation
+  useUpdateMonthlyRatesMutation,
+  useGetAuthUserQuery
 } = api;

@@ -4,6 +4,7 @@ const express_1 = require("express");
 const userController_1 = require("../controllers/userController");
 const router = (0, express_1.Router)();
 router.get("/", userController_1.getUsers);
-router.post("/", userController_1.postUser);
+router.post("/", userController_1.createUser);
 router.get("/:cognitoId", userController_1.getUser);
+router.put("/:cognitoId", userController_1.updateUser);
 exports.default = router;

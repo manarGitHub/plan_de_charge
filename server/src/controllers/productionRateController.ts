@@ -17,6 +17,7 @@ export const calculateAndSaveProductionRates = async (req: Request, res: Respons
       const monthKey = `${start.getFullYear()}-${String(month + 1).padStart(2, "0")}`;
 
       for (const user of users) {
+        // Get user availability
         const availability = await prisma.availability.findFirst({
           where: {
             userId: user.userId,
@@ -26,18 +27,28 @@ export const calculateAndSaveProductionRates = async (req: Request, res: Respons
 
         const availableDays = availability?.daysAvailable ?? 0;
 
+        // Get all tasks for the user in the month
         const tasks = await prisma.task.findMany({
           where: {
             assignedUserId: user.userId,
             startDate: { gte: start, lte: end },
           },
-          select: { workingDays: true },
+          select: { 
+            workingDays: true,
+            devisId: true
+          },
         });
 
+        // Calculate metrics
         const workingDays = tasks.reduce((sum, task) => sum + (task.workingDays ?? 0), 0);
+        const unbilledDays = tasks.reduce((sum, task) => 
+          sum + (task.devisId === null ? (task.workingDays ?? 0) : 0), 0);
+        
+        const daysInvoiced = workingDays - unbilledDays;
+        const productionRate = availableDays > 0 ? daysInvoiced / availableDays : 0;
+        const occupationRate = availableDays > 0 ? workingDays / availableDays : 0;
 
-        const productionRate = availableDays > 0 ? workingDays / availableDays : 0;
-
+        // Create/update record
         const saved = await prisma.monthlyProductionRate.upsert({
           where: {
             userId_month: {
@@ -48,14 +59,18 @@ export const calculateAndSaveProductionRates = async (req: Request, res: Respons
           update: {
             availableDays,
             workingDays,
+            unbilledDays,
             productionRate,
+            occupationRate,
           },
           create: {
             userId: user.userId,
             month: monthKey,
             availableDays,
             workingDays,
+            unbilledDays,
             productionRate,
+            occupationRate,
           },
         });
 
@@ -70,15 +85,12 @@ export const calculateAndSaveProductionRates = async (req: Request, res: Respons
   }
 };
 
-
-// Ajoute cette fonction dans le même fichier
-
 export const getAllMonthlyRates = async (req: Request, res: Response) => {
   try {
     const rates = await prisma.monthlyProductionRate.findMany({
       include: {
         user: {
-          select: { userId: true, username: true, profile: true } // adapte selon ton modèle User
+          select: { userId: true, username: true, profile: true }
         }
       },
       orderBy: [
