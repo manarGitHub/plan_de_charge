@@ -15,10 +15,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Avatar, AvatarImage } from "../ui/avatar";
 
 
-
+// Add Super Admin type guard
+const isSuperAdmin = (user: AuthUserResponse): user is AuthUserResponse & { 
+  userRole: 'super_admin';
+  userInfo: null;
+} => {
+  return user.userRole === 'super_admin';
+};
 // Type guard for Manager
 const isManager = (user: AuthUserResponse): user is AuthUserResponse & { 
   userRole: 'manager'; 
@@ -42,7 +48,7 @@ const Navbar = () => {
   const router = useRouter();
   const pathname = usePathname();
   const isDashboardPage =
-  pathname.includes("/managers") || pathname.includes("/users");
+  pathname.includes("/managers") || pathname.includes("/users") ||  pathname.includes("/super_admin/manageUsers"); ;
 
   const handleSignOut = async () => {
     await signOut();
@@ -50,12 +56,25 @@ const Navbar = () => {
   };
 
    // Get display name safely
-   const getDisplayName = () => {
+    const getDisplayName = () => {
     if (!authUser) return '';
-    else if (isManager(authUser) ) return authUser.userInfo.name ;
-    else if (isUser(authUser)) return authUser.userInfo.username;
+    if (isSuperAdmin(authUser)) return "Super Admin";
+    if (isManager(authUser)) return authUser.userInfo.name;
+    if (isUser(authUser)) return authUser.userInfo.username;
+    return '';
   };
 
+    // Modified handleNavigation
+  const handleNavigation = (path: string) => {
+    if (!authUser) return;
+    
+    if (isSuperAdmin(authUser)) {
+      router.push('/super_admin/manageUsers');
+      return;
+    }
+
+    router.push(path);
+  };
   
   return (
     <div className="flex items-center justify-between bg-white px-4 py-3 dark:bg-black">
@@ -115,28 +134,18 @@ const Navbar = () => {
                 </span>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-              <DropdownMenuItem
-  onClick={() => {
-    if (isDashboardPage) {
-      router.push('/');
-    } else {
-      router.push(
-        isManager(authUser) 
-          ? "/managers/home" 
-          : "/users/home"
-      );
-    }
-  }}
->
-  {isDashboardPage ? "page d'accueil" : "Dashboard"}
-</DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() =>
-                    router.push(`/${authUser.userRole}/settings`)
-                  }
-                >
-                  Paramétres
-                </DropdownMenuItem>
+              <DropdownMenuItem 
+               onClick={() => isDashboardPage ? router.push('/') : handleNavigation(
+                    isSuperAdmin(authUser) 
+                      ? "/super_admin/manageUsers" 
+                      : isManager(authUser) 
+                        ? "/managers/home" 
+                        : "/users/home"
+                  )}
+      >
+{isDashboardPage ? "Page d'accueil" : 
+                    isSuperAdmin(authUser) ? "Manage Users" : "Dashboard"}
+              </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>Se déconnecter</DropdownMenuItem>
               </DropdownMenuContent>
@@ -146,9 +155,6 @@ const Navbar = () => {
           <>
             <Link href="/signin">
               <Button variant="outline" className="text-black dark:text-white">Se connecter</Button>
-            </Link>
-            <Link href="/signup">
-              <Button variant="secondary"> S'inscrire</Button>
             </Link>
           </>
         )}

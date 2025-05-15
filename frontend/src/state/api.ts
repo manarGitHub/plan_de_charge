@@ -1,4 +1,4 @@
-import { createNewUserInDatabase } from "@/lib/utils";
+//import { createNewUserInDatabase } from "@/lib/utils";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { AuthUser, fetchAuthSession, getCurrentUser } from "aws-amplify/auth";
 
@@ -6,10 +6,17 @@ export type JsonPrimitive = string | number | boolean | null;
 export type JsonArray = JsonValue[];
 export type JsonObject = { [key: string]: JsonValue };
 export type JsonValue = JsonPrimitive | JsonObject | JsonArray;
+// Type guard helper
+function isUser(user: User | Manager): user is User {
+  return (user as User).userId !== undefined;
+}
+
+export type UserOrManager = User | Manager;
+
 
 export interface AuthUserResponse {
   cognitoInfo: AuthUser;
-  userInfo: User | Manager;
+  userInfo: User | Manager |null;
   userRole: JsonObject | JsonPrimitive | JsonArray;
 }
 export interface Project {
@@ -46,6 +53,8 @@ export interface User {
   profilePictureUrl?: string;
   cognitoId?: string;
   teamId?: number;
+  role?: 'user';
+
 }
 export interface Manager {
   id: number;
@@ -53,6 +62,8 @@ export interface Manager {
   email: string;
   phoneNumber: string;
   cognitoId: string;
+  role?: 'manager';
+
 }
 
 export interface UserWithDevis {
@@ -146,6 +157,24 @@ export interface MonthlyProductionRate {
   updatedAt:string;    
 }
 
+// In your state/api types file (e.g., types.ts)
+export type Comment = {
+  id: number;
+  text: string;
+  taskId: number;
+  userId: number;
+  user: {
+    userId: number;
+    username: string;
+    profilePictureUrl?: string;
+  };
+};
+
+export type TaskType = {
+  // ... existing task properties
+  comments?: Comment[];
+};
+
 export const api = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
@@ -158,66 +187,46 @@ export const api = createApi({
       return headers;
     },
   }),
+
+  
  
   reducerPath: "api",
-  tagTypes: ["Projects", "Tasks", "Users", "Teams", "Devis","MonthlyProductionRates"],
+  tagTypes: ["Projects", "Tasks", "Users", "Teams", "Devis","MonthlyProductionRates","Managers"],
   endpoints: (build) => ({
-    getAuthUser: build.query<AuthUserResponse, void>({
+      getAuthUser: build.query<AuthUserResponse, void>({
       queryFn: async (_, _queryApi, _extraoptions, fetchWithBQ) => {
         try {
           const session = await fetchAuthSession();
-          console.log('Cognito session:', session); // Add this
-
           const { idToken } = session.tokens ?? {};
-          console.log('ID Token:', idToken); // Add this
-
           const user = await getCurrentUser();
-          console.log('Cognito user:', user); // Add this
-
+          console.log(idToken)
           const userRole = idToken?.payload["custom:role"] as string;
+          console.log("userrole:",userRole)
+          const userEmail = idToken?.payload["email"] as string;
+          console.log("userEmail:",userEmail);
+          const isSuperAdmin = userEmail === process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
 
-          console.log('Derived role:', userRole); // Add this
-
-
-          const endpoint =
-            userRole === "manager"
-              ? `/managers/${user.userId}`
-              : `/users/${user.userId}`;
-    
-          let userDetailsResponse = await fetchWithBQ(endpoint);
-    
-          // Proper error type handling
-          if (userDetailsResponse.error) {
-            // Type guard for FetchBaseQueryError
-            if ('status' in userDetailsResponse.error) {
-              // Handle 404 case
-              if (userDetailsResponse.error.status === 404) {
-                userDetailsResponse = await fetchWithBQ({
-                  url: userRole === "manager" ? "/managers" : "/users",
-                  method: "POST",
-                  body: {
-                    cognitoId: user.userId,
-                    ...(userRole === "manager" 
-                      ? { name: user.username }
-                      : { username: user.username }),
-                    email: idToken?.payload?.email || "",
-                    phoneNumber: "",
-                  }
-                });
-              } else {
-                // Handle other error statuses
-                throw new Error(
-                  typeof userDetailsResponse.error.data === 'string' 
-                    ? userDetailsResponse.error.data 
-                    : 'Unknown error'
-                );
-              }
-            } else {
-              // Handle non-FetchBaseQueryError errors
-              throw new Error('Unknown error');
-            }
+        if (isSuperAdmin) {
+          console.log("isSuperAdmin")
+        return {
+          data: {
+            cognitoInfo: user,
+            userInfo: null,
+            userRole: 'super_admin'
           }
-    
+        };
+      }
+          const endpoint = userRole === "manager" 
+            ? `/managers/${user.userId}` 
+            : `/users/${user.userId}`;
+
+          const userDetailsResponse = await fetchWithBQ(endpoint);
+
+          if (userDetailsResponse.error) {
+            // Remove automatic user creation logic
+            throw new Error('User not found in database');
+          }
+
           return {
             data: {
               cognitoInfo: { ...user },
@@ -226,7 +235,6 @@ export const api = createApi({
             },
           };
         } catch (error: any) {
-          // Proper error return format
           return { 
             error: {
               status: error.status || 'CUSTOM_ERROR',
@@ -390,6 +398,74 @@ export const api = createApi({
       }),
       invalidatesTags: ['MonthlyProductionRates'],
     }),
+     
+    // Get all users (for super admin)
+    getAllUsers: build.query<(User | Manager)[], void>({
+      query: () => '/manageUsers',
+      transformResponse: (response: { users: User[], managers: Manager[] }) => [
+        ...response.users,
+        ...response.managers
+      ],
+      providesTags: ['Users', 'Managers']
+    }),
+
+    // Create user
+    createUser: build.mutation<void, { 
+      username: string;
+      email: string; 
+      role: string; 
+      name?: string; 
+      phoneNumber?: string 
+    }>({
+      query: (userData) => ({
+        url: '/manageUsers',
+        method: 'POST',
+        body: userData
+      }),
+      invalidatesTags: ['Users', 'Managers']
+    }),
+
+    // Update user
+    updateUser: build.mutation<
+      User | Manager, 
+      { id: number; name?: string; phoneNumber?: string }
+    >({
+      query: ({ id, ...body }) => ({
+        url: `/manageUsers/${id}`,
+        method: 'PUT',
+        body
+      }),
+        invalidatesTags: (result) => {
+        if (!result) return ['Users', 'Managers'];
+        return isUser(result) 
+          ? [{ type: 'Users', id: result.userId }]
+          : [{ type: 'Managers', id: result.id }];
+      }
+    }),
+
+    // Delete user
+    deleteUser: build.mutation<void, number>({
+      query: (id) => ({
+        url: `/manageUsers/${id}`,
+        method: 'DELETE'
+      }),
+      invalidatesTags: ['Users', 'Managers']
+    }),
+
+    // Get single user
+    getUserById: build.query<User | Manager, number>({
+      query: (id) => `/manageUsers/${id}`,
+      providesTags: (result) => {
+        if (!result) return ['Users', 'Managers'];
+        return isUser(result)
+          ? [{ type: 'Users', id: result.userId }]
+          : [{ type: 'Managers', id: result.id }];
+      }
+    }),
+
+
+
+
     
   }),
 });
@@ -418,5 +494,12 @@ export const {
   useDeleteAvailabilityMutation,
   useGetMonthlyRatesQuery, 
   useUpdateMonthlyRatesMutation,
-  useGetAuthUserQuery
+  useGetAuthUserQuery,
+
+
+   useGetAllUsersQuery,
+  useCreateUserMutation,
+  useUpdateUserMutation,
+  useDeleteUserMutation,
+  useGetUserByIdQuery
 } = api;

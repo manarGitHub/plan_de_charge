@@ -23,10 +23,19 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (authUser) {
+      const isSuperAdmin = authUser.userRole === 'super_admin';
       const userRole = (authUser.userRole as String).toLowerCase();
       const isValidPath = userRole === "manager" 
         ? pathname.startsWith("/managers")
         : pathname.startsWith("/users");
+
+        if (isSuperAdmin) {
+        if (!pathname.startsWith("/super_admin")) {
+          router.push("/super_admin/manageusers");
+        }
+        setIsLoading(false);
+        return;
+      }
 
       if (!isValidPath) {
         router.push(userRole === "manager" ? "/managers/home" : "/users/home");
@@ -37,12 +46,17 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
 
   if (authLoading || isLoading) return <div>Loading...</div>;
   if (!authUser?.userRole) return null;
+  const isSuperAdmin = authUser.userRole === 'super_admin';
 
   return (
     <div className={`flex min-h-screen w-full ${isDarkMode ? "dark bg-dark-bg" : "bg-gray-50"}`}>
-      <Sidebar         userType={(authUser.userRole as String).toLowerCase() as "manager" | "user"} 
- />
-      <div className={`flex w-full flex-col ${isSidebarCollapsed ? "" : "md:pl-64"}`}>
+      {!isSuperAdmin  &&(
+            <Sidebar         userType={(authUser.userRole as String).toLowerCase() as "manager" | "user"} />)
+
+      }
+      <div className={`flex w-full flex-col ${
+  !isSuperAdmin && !isSidebarCollapsed ? "md:pl-64" : ""
+}`}>
         <Navbar />
         <main className="flex-grow p-4 transition-all duration-300">
           {children}

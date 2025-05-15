@@ -43,7 +43,7 @@ model Manager {
   id          Int    @id @default(autoincrement())
   cognitoId   String @unique
   name        String
-  email       String
+  email       String @unique
   phoneNumber String
 
 }

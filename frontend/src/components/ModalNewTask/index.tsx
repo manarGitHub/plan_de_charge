@@ -1,5 +1,5 @@
 import Modal from "@/components/modal";
-import { Priority, Status, Task, useCreateTaskMutation, useUpdateTaskMutation } from "@/state/api";
+import { Priority, Status, Task, useCreateTaskMutation, useGetAllDevisQuery, useGetProjectsQuery, useGetUsersQuery, useUpdateTaskMutation } from "@/state/api";
 import React, { useState, useEffect } from "react";
 import { formatISO } from "date-fns";
 
@@ -13,6 +13,11 @@ type Props = {
 const ModalNewTask = ({ isOpen, onClose, id = null, taskData = null }: Props) => {
   const [createTask, { isLoading: isCreating }] = useCreateTaskMutation();
   const [updateTask, { isLoading: isUpdating }] = useUpdateTaskMutation();
+
+  const { data: users = [], isLoading: usersLoading } = useGetUsersQuery();
+  const { data: devis = [], isLoading: devisLoading } = useGetAllDevisQuery();
+  const { data: projects = [], isLoading: projectsLoading } = useGetProjectsQuery();
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [workingdays, setWorkingDays] = useState("");
@@ -198,35 +203,59 @@ const ModalNewTask = ({ isOpen, onClose, id = null, taskData = null }: Props) =>
             onChange={(e) => setDueDate(e.target.value)}
           />
         </div>
-        <input
-          type="text"
+        <select
           className={inputStyles}
-          placeholder="ID de l'auteur"
           value={authorUserId}
           onChange={(e) => setAuthorUserId(e.target.value)}
-        />
-        <input
-          type="text"
+          disabled={usersLoading}
+        >
+          <option value="">Sélectionner l'auteur</option>
+          {users.map((user) => (
+            <option key={user.userId} value={user.userId}>
+              {user.username}
+            </option>
+          ))}
+        </select>
+          <select
           className={inputStyles}
-          placeholder="ID de l'utilisateur assigné"
           value={assignedUserId}
           onChange={(e) => setAssignedUserId(e.target.value)}
-        />
-        <input
-          type="text"
+          disabled={usersLoading}
+        >
+          <option value="">Sélectionner l'assigné</option>
+          {users.map((user) => (
+            <option key={user.userId} value={user.userId}>
+              {user.username}
+            </option>
+          ))}
+        </select>
+        <select
           className={inputStyles}
-          placeholder="Devis ID"
           value={devisId}
           onChange={(e) => setDevisId(e.target.value)}
-        />
+          disabled={devisLoading}
+        >
+          <option value="">Sélectionner Devis</option>
+          {devis.map((devi) => (
+            <option key={devi.id} value={devi.id}>
+              {devi.numero_dac}
+            </option>
+          ))}
+        </select>
         {id === null && (
-          <input
-            type="text"
+           <select
             className={inputStyles}
-            placeholder="ID application"
             value={projectId}
             onChange={(e) => setProjectId(e.target.value)}
-          />
+            disabled={projectsLoading}
+          >
+            <option value="">Sélectionner une application</option>
+            {projects.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name}
+              </option>
+            ))}
+          </select>
         )}
         <button
           type="submit"

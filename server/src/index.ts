@@ -15,6 +15,7 @@ import availabilityRoutes from "./routes/availabilityRoutes";
 import productionRateRoutes from "./routes/productionRateRoutes";
 import managerRoutes from "./routes/managerRoutes";
 import { authMiddleware } from "./middleware/authMiddleware";
+import manageUsersRoutes from "./routes/manageUsersRoutes";
 
 /* CONFIGURATIONS */
 dotenv.config();
@@ -41,6 +42,7 @@ app.use('/availabilities', availabilityRoutes);
 app.use("/production-rates", productionRateRoutes);
 app.use("/users",userRoutes);
 app.use("/managers", authMiddleware(["manager"]), managerRoutes);
+app.use("/manageUsers", manageUsersRoutes)
 
 
 /* SERVER */

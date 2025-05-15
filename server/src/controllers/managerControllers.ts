@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
+import { createCognitoUser, deleteCognitoUser } from "../services/cognitoService";
 
 const prisma = new PrismaClient();
 

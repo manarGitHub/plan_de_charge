@@ -27,7 +27,6 @@ async function main() {
     "team.json",
     "project.json",
     "projectTeam.json",
-    "manager.json", // No dependencies
     "user.json",
     "devis.json",
     "task.json",

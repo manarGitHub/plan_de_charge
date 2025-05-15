@@ -7,6 +7,8 @@ import { Task as TaskType } from "@/state/api";
 import { EllipsisVertical, MessageSquareMore, Plus } from "lucide-react";
 import { format } from "date-fns";
 import Image from "next/image";
+import { Tooltip } from 'react-tooltip'; // Add this import
+
 
 type BoardProps = {
   id: string;
@@ -158,6 +160,7 @@ type TaskProps = {
 
 const Task = ({ task  , onModify}: TaskProps) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [showComments, setShowComments] = useState(false);
   const [deleteTask] = useDeleteTaskMutation();
   const [{ isDragging }, drag] = useDrag(() => ({
     type: "task",
@@ -212,6 +215,11 @@ const Task = ({ task  , onModify}: TaskProps) => {
   }}
   className={`mb-6 rounded-lg bg-white shadow-lg dark:bg-dark-secondary ${isDragging ? "opacity-60" : "opacity-100"} transition-all duration-300 ease-in-out hover:shadow-xl hover:scale-105`}
 >
+    {/* Add tooltip container */}
+      <Tooltip 
+        id="user-tooltip" 
+        className="!bg-dark-secondary !text-white !opacity-100 !rounded-lg !px-2 !py-1"
+      />
   {task.attachments && task.attachments.length > 0 && (
     <Image
       src={`/${task.attachments[0].fileURL}`}
@@ -296,6 +304,8 @@ const Task = ({ task  , onModify}: TaskProps) => {
             width={32}
             height={32}
             className="h-9 w-9 rounded-full border-2 border-white object-cover dark:border-dark-secondary"
+            data-tooltip-id="user-tooltip"
+            data-tooltip-content={task.assignee.username}
           />
         )}
         {task.author && (
@@ -306,13 +316,51 @@ const Task = ({ task  , onModify}: TaskProps) => {
             width={32}
             height={32}
             className="h-9 w-9 rounded-full border-2 border-white object-cover dark:border-dark-secondary"
+            data-tooltip-id="user-tooltip"
+            data-tooltip-content={task.author.username}
           />
         )}
       </div>
-      <div className="flex items-center text-gray-600 dark:text-neutral-400">
+        <div 
+        className="flex items-center text-gray-600 dark:text-neutral-400 cursor-pointer hover:text-blue-500 transition-colors"
+        onClick={() => setShowComments(!showComments)}
+      >
         <MessageSquareMore size={20} />
         <span className="ml-2 text-sm">{numberOfComments}</span>
       </div>
+
+      {/* Comment list */}
+      {showComments && (
+        <div className="mt-4 space-y-4">
+          {task.comments?.map((comment) => (
+            <div key={comment.id} className="flex gap-3">
+              <div className="relative">
+                <Image
+                  src={`/${comment.user.profilePictureUrl}`}
+                  alt={comment.user.username}
+                  width={32}
+                  height={32}
+                  className="h-8 w-8 rounded-full border-2 border-white dark:border-dark-secondary"
+                  data-tooltip-id="user-tooltip"
+                  data-tooltip-content={comment.user.username}
+                />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium dark:text-white">
+                    {comment.user.username}
+                  </span>
+                  <span className="text-xs text-gray-500 dark:text-neutral-400">
+                  </span>
+                </div>
+                <p className="mt-1 text-sm text-gray-700 dark:text-neutral-300">
+                  {comment.text}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   </div>
 </div>

@@ -20,8 +20,10 @@ const availabilityRoutes_1 = __importDefault(require("./routes/availabilityRoute
 const productionRateRoutes_1 = __importDefault(require("./routes/productionRateRoutes"));
 const managerRoutes_1 = __importDefault(require("./routes/managerRoutes"));
 const authMiddleware_1 = require("./middleware/authMiddleware");
+const manageUsersRoutes_1 = __importDefault(require("./routes/manageUsersRoutes"));
 /* CONFIGURATIONS */
 dotenv_1.default.config();
+//here add logic to verify if super admin exist . if so continue else create one (credentials ; .env)
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
 app.use((0, helmet_1.default)());
@@ -43,6 +45,7 @@ app.use('/availabilities', availabilityRoutes_1.default);
 app.use("/production-rates", productionRateRoutes_1.default);
 app.use("/users", userRoutes_1.default);
 app.use("/managers", (0, authMiddleware_1.authMiddleware)(["manager"]), managerRoutes_1.default);
+app.use("/manageUsers", manageUsersRoutes_1.default);
 /* SERVER */
 const port = Number(process.env.PORT) || 3000;
 app.listen(port, "0.0.0.0", () => {

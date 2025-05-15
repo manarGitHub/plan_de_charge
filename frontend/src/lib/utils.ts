@@ -56,7 +56,7 @@ export function cleanParams(params: Record<string, any>): Record<string, any> {
     )
   );
 }
-
+/*
 export const createNewUserInDatabase = async (
   user: any,
   idToken: any,
@@ -92,4 +92,4 @@ export const createNewUserInDatabase = async (
   }
 
   return createUserResponse;
-};
+};*/

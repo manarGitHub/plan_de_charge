@@ -30,19 +30,24 @@
     "typescript": "^5.8.2"
   },
   "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.806.0",
     "@aws-sdk/client-s3": "^3.799.0",
+    "@aws-sdk/client-ses": "^3.806.0",
     "@aws-sdk/lib-storage": "^3.799.0",
     "@prisma/client": "^6.5.0",
+    "@types/nodemailer": "^6.4.17",
     "axios": "^1.9.0",
     "body-parser": "^1.20.3",
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "generate-password": "^1.7.1",
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.2",
+    "nodemailer": "^7.0.3",
     "prisma": "^6.5.0",
     "uuid": "^11.1.0"
   }

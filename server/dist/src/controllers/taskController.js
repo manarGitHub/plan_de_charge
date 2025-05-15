@@ -11,6 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteTask = exports.getUserTasks = exports.updateTaskStatus = exports.updateTask = exports.createTask = exports.getTasks = void 0;
 const client_1 = require("@prisma/client");
+const emailService_1 = require("../services/emailService");
 const prisma = new client_1.PrismaClient();
 const getTasks = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { projectId } = req.query;
@@ -37,6 +38,7 @@ const getTasks = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 });
 exports.getTasks = getTasks;
 const createTask = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c, _d, _e, _f, _g;
     const { title, description, status, priority, tags, startDate, dueDate, workingDays, projectId, authorUserId, assignedUserId, devisId, } = req.body;
     try {
         const data = {
@@ -63,7 +65,30 @@ const createTask = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             data.assignedUserId = assignedUserId;
         if (devisId)
             data.devisId = devisId;
-        const newTask = yield prisma.task.create({ data });
+        const newTask = yield prisma.task.create({
+            data,
+            include: {
+                assignee: true,
+                author: true,
+                project: true, // assuming task has a relation to project with a name field
+                devis: true
+            },
+        });
+        // Send email to assignee if assignedUserId is present
+        if (((_a = newTask.assignee) === null || _a === void 0 ? void 0 : _a.email) && ((_b = newTask.author) === null || _b === void 0 ? void 0 : _b.username) && ((_c = newTask.author) === null || _c === void 0 ? void 0 : _c.email) && ((_d = newTask.project) === null || _d === void 0 ? void 0 : _d.name)) {
+            yield (0, emailService_1.sendAssignmentEmail)({
+                to: newTask.assignee.email,
+                taskTitle: newTask.title,
+                devis: ((_e = newTask.devis) === null || _e === void 0 ? void 0 : _e.numero_dac) || "Non FACT",
+                projectName: newTask.project.name,
+                assignerName: newTask.author.username,
+                assignerEmail: newTask.author.email, // ✅ Add this
+                dueDate: (_f = newTask.dueDate) === null || _f === void 0 ? void 0 : _f.toISOString().split("T")[0],
+            });
+        }
+        if (!((_g = newTask.author) === null || _g === void 0 ? void 0 : _g.email)) {
+            console.warn("Author email not found — skipping email to assigner.");
+        }
         res.status(201).json(newTask);
     }
     catch (error) {
@@ -75,6 +100,7 @@ const createTask = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
 });
 exports.createTask = createTask;
 const updateTask = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c, _d, _e, _f;
     const { taskId } = req.params;
     const { title, description, status, priority, tags, workingDays, startDate, dueDate, assignedUserId, devisId, } = req.body;
     try {
@@ -106,7 +132,28 @@ const updateTask = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
                 id: Number(taskId),
             },
             data,
+            include: {
+                assignee: true,
+                author: true,
+                project: true,
+                devis: true,
+            },
         });
+        // ✅ Send email to assignee and author if all required info is present
+        if (((_a = updatedTask.assignee) === null || _a === void 0 ? void 0 : _a.email) &&
+            ((_b = updatedTask.author) === null || _b === void 0 ? void 0 : _b.username) &&
+            ((_c = updatedTask.author) === null || _c === void 0 ? void 0 : _c.email) &&
+            ((_d = updatedTask.project) === null || _d === void 0 ? void 0 : _d.name)) {
+            yield (0, emailService_1.sendAssignmentEmail)({
+                to: updatedTask.assignee.email,
+                taskTitle: updatedTask.title,
+                devis: ((_e = updatedTask.devis) === null || _e === void 0 ? void 0 : _e.numero_dac) || "Non FACT",
+                projectName: updatedTask.project.name,
+                assignerName: updatedTask.author.username,
+                assignerEmail: updatedTask.author.email,
+                dueDate: (_f = updatedTask.dueDate) === null || _f === void 0 ? void 0 : _f.toISOString().split("T")[0],
+            });
+        }
         // Send the updated task back in the response
         res.json(updatedTask);
     }

@@ -5,8 +5,6 @@ import { Amplify } from "aws-amplify";
 import {
   Authenticator,
   Heading,
-  Radio,
-  RadioGroupField,
   useAuthenticator,
   View,
 } from "@aws-amplify/ui-react";
@@ -41,54 +39,10 @@ const components = {
   },
   SignIn: {
     Footer() {
-      const { toSignUp } = useAuthenticator();
       return (
         <View className="text-center mt-4">
           <p className="text-muted-foreground">
-            Vous n'avez pas de compte ?{" "}
-            <button
-              onClick={toSignUp}
-              className="text-primary hover:underline bg-transparent border-none p-0"
-            >
-              Inscrivez-vous ici
-            </button>
-          </p>
-        </View>
-      );
-    },
-  },
-  SignUp: {
-    FormFields() {
-      const { validationErrors } = useAuthenticator();
-
-      return (
-        <>
-          <Authenticator.SignUp.FormFields />
-          <RadioGroupField
-            legend="Rôle"
-            name="custom:role"
-            errorMessage={validationErrors?.["custom:role"]}
-            hasError={!!validationErrors?.["custom:role"]}
-            isRequired
-          >
-            <Radio value="user">Utilisateur</Radio>
-            <Radio value="manager">Administrateur</Radio>
-          </RadioGroupField>
-        </>
-      );
-    },
-    Footer() {
-      const { toSignIn } = useAuthenticator();
-      return (
-        <View className="text-center mt-4">
-          <p className="text-muted-foreground">
-            Vous avez déjà un compte ?{" "}
-            <button
-              onClick={toSignIn}
-              className="text-primary hover:underline bg-transparent border-none p-0"
-            >
-              Se connecter
-            </button>
+            Contactez admin
           </p>
         </View>
       );
@@ -98,7 +52,7 @@ const components = {
 
 const formFields = {
   signIn: {
-    username: {
+    email: {
       placeholder: "Entrez votre adresse e-mail",
       label: "E-mail",
       isRequired: true,
@@ -109,32 +63,6 @@ const formFields = {
       isRequired: true,
     },
   },
-  signUp: {
-    username: {
-      order: 1,
-      placeholder: "Choisissez un nom d'utilisateur",
-      label: "Nom d'utilisateur",
-      isRequired: true,
-    },
-    email: {
-      order: 2,
-      placeholder: "Entrez votre adresse e-mail",
-      label: "E-mail",
-      isRequired: true,
-    },
-    password: {
-      order: 3,
-      placeholder: "Créez un mot de passe",
-      label: "Mot de passe",
-      isRequired: true,
-    },
-    confirm_password: {
-      order: 4,
-      placeholder: "Confirmez votre mot de passe",
-      label: "Confirmer le mot de passe",
-      isRequired: true,
-    },
-  },
 };
 
 const Auth = ({ children }: { children: React.ReactNode }) => {
@@ -142,12 +70,13 @@ const Auth = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
   const pathname = usePathname();
 
-  const isAuthPage = pathname.match(/^\/(signin|signup)$/);
+  const isAuthPage = pathname.match(/^\/(signin)$/);
   const isDashboardPage =
     pathname.startsWith("/manager") || pathname.startsWith("/user");
 
   useEffect(() => {
     if (user && isAuthPage) {
+
       router.push("/");
     }
   }, [user, isAuthPage, router]);
@@ -159,7 +88,8 @@ const Auth = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="h-full">
       <Authenticator
-        initialState={pathname.includes("signup") ? "signUp" : "signIn"}
+        hideSignUp
+        initialState={"signIn"}
         components={components}
         formFields={formFields}
       >
