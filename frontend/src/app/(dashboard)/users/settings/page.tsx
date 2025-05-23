@@ -1,9 +1,9 @@
+"use client";
 import { isManager, isUser } from '@/components/UserFormModal';
 import { useGetAuthUserQuery } from '@/state/api';
 import { Box, Typography, Paper, CircularProgress, Alert } from '@mui/material';
-import { Settings } from 'lucide-react';
 
-export const ProfilePage = () => {
+const Settings = () => {
   const { data, isLoading, error } = useGetAuthUserQuery();
 
   if (isLoading) return <CircularProgress />;

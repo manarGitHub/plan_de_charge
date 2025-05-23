@@ -83,22 +83,22 @@ export const sendCredentialsEmail = async (params: {
   const mailOptions = {
     from: process.env.EMAIL_FROM,
     to,
-    subject: `Your Account Credentials - ${process.env.APP_NAME}`,
+    subject: `Les données d'identification de votre compte - ${process.env.APP_NAME}`,
     text: `
-      Hello ${name || 'there'},
+      Bonjour ${name || 'là'},
 
-      Your account has been successfully created with the ${role} role.
+       Votre compte a été créé avec succès avec ${role} role.
 
-      Login credentials:
+      Identifiants de connexion:
       Email: ${to}
-      Your account has been created with username: ${username}
-      Temporary Password: ${tempPassword}
+      Votre compte a été créé avec le nom d'utilisateur: ${username}
+      Mot de passe temporaire: ${tempPassword}
 
-      Please sign in here: ${process.env.APP_LOGIN_URL}
+      Veuillez vous inscrire ici: ${process.env.APP_LOGIN_URL}
       
-      You'll be required to change your password upon first login.
+      Il vous sera demandé de changer votre mot de passe lors de votre première connexion.
 
-      Best regards,
+      Meilleures salutations,
       ${process.env.EMAIL_FROM_NAME || 'System Administration'}
     `,
     html: `

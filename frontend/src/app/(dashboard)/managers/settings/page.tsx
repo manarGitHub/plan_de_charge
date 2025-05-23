@@ -3,7 +3,7 @@ import { isManager, isUser } from '@/components/UserFormModal';
 import { useGetAuthUserQuery } from '@/state/api';
 import { Box, Typography, Paper, CircularProgress, Alert } from '@mui/material';
 
-export const Settings = () => {
+const Settings = () => {
   const { data, isLoading, error } = useGetAuthUserQuery();
 
   if (isLoading) return <CircularProgress />;
